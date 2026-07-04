@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar for some Antd components if needed */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  background: #f5f5f5;
+  font-size: 16px; /* 全域字體放大為 16px */
+}
+
+/* ==========================================
+   行行事曆三種標題/網格樣式風格
+   ========================================== */
+
+/* 全域套用：統一將行事曆格線設為較深、較清晰的灰色 #bfbfbf */
+.cal-style-google .ant-picker-content,
+.cal-style-corporate .ant-picker-content,
+.cal-style-minimalist .ant-picker-content {
+  border-collapse: collapse !important;
+}
+
+.cal-style-google .ant-picker-content th,
+.cal-style-google .ant-picker-content td,
+.cal-style-corporate .ant-picker-content th,
+.cal-style-corporate .ant-picker-content td,
+.cal-style-minimalist .ant-picker-content th,
+.cal-style-minimalist .ant-picker-content td {
+  border: 1px solid #bfbfbf !important;
+}
+
+/* 樣式一：經典簡約 (Google 風格) - 週一開始 */
+.cal-style-google .ant-picker-content th {
+  background: #ffffff !important;
+  color: #70757a !important;
+  padding: 12px 0 !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+}
+
+.cal-style-google .ant-picker-content td {
+  background-color: #ffffff !important;
+}
+
+/* 週末無特殊底色，保持與平日一致的乾淨白底 */
+.cal-style-google .ant-picker-cell:nth-child(6):not(.ant-picker-cell-selected),
+.cal-style-google .ant-picker-cell:nth-child(7):not(.ant-picker-cell-selected) {
+  background-color: #ffffff !important;
+}
+
+.cal-style-google .ant-picker-cell:nth-child(6) .ant-picker-calendar-date-value,
+.cal-style-google .ant-picker-cell:nth-child(7) .ant-picker-calendar-date-value {
+  color: #70757a !important;
+}
+
+/* 樣式二：商務深灰黑底 */
+.cal-style-corporate .ant-picker-content th {
+  background: #1f2937 !important;
+  color: #ffffff !important;
+  padding: 12px 0 !important;
+  font-weight: bold !important;
+}
+.cal-style-corporate .ant-picker-content th:first-child {
+  color: #ff9c6e !important;
+}
+.cal-style-corporate .ant-picker-content th:last-child {
+  color: #69c0ff !important;
+}
+
+/* 樣式三：極簡上邊框 */
+.cal-style-minimalist .ant-picker-content th {
+  background: #ffffff !important;
+  color: #8c8c8c !important;
+  border-top: 3px solid #d9d9d9 !important;
+  padding: 8px 0 !important;
+  font-weight: 500 !important;
+}
+.cal-style-minimalist .ant-picker-content th:first-child {
+  border-top: 3px solid #ff4d4f !important;
+  color: #ff4d4f !important;
+}
+.cal-style-minimalist .ant-picker-content th:last-child {
+  border-top: 3px solid #1677ff !important;
+  color: #1677ff !important;
+}
