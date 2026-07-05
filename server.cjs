@@ -439,7 +439,7 @@ app.post('/api/orgs', async (req, res) => {
   }
 });
 
-// 3. 更新組織節點
+// 3. 更新組織節點 (支援名稱變更時聯動更新 tasks 中的對應值)
 app.put('/api/orgs/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -455,9 +455,36 @@ app.put('/api/orgs/:id', async (req, res) => {
     const level = o.hasOwnProperty('level') ? o.level : existing.level;
     const parentId = o.hasOwnProperty('parentId') ? o.parentId : existing.parentId;
 
+    const oldName = existing.name;
+
     await db.run(`
       UPDATE orgs SET type = ?, name = ?, level = ?, parentId = ? WHERE id = ?
     `, [type, name, level, parentId, id]);
+
+    // 若名稱改變，級聯更新任務資料表中相應的部門與人員名稱
+    if (name !== oldName) {
+      if (type === 'org') {
+        await db.run('UPDATE tasks SET department = ? WHERE department = ?', [name, oldName]);
+        await db.run('UPDATE tasks SET executingDepartment = ? WHERE executingDepartment = ?', [name, oldName]);
+      } else if (type === 'person') {
+        await db.run('UPDATE tasks SET demandPerson = ? WHERE demandPerson = ?', [name, oldName]);
+        await db.run('UPDATE tasks SET executingPerson = ? WHERE executingPerson = ?', [name, oldName]);
+      }
+    }
+
+    // 級聯自我修復：只要修改人員，就自動將該人員所有任務的「執行部門」與「需求部門」與其當前隸屬部門同步
+    if (type === 'person') {
+      if (parentId) {
+        const parentDept = await db.get('SELECT name FROM orgs WHERE id = ?', [parentId]);
+        if (parentDept) {
+          const newDeptName = parentDept.name;
+          // 級聯更新執行部門
+          await db.run('UPDATE tasks SET executingDepartment = ? WHERE executingPerson = ?', [newDeptName, name]);
+          // 級聯更新需求部門
+          await db.run('UPDATE tasks SET department = ? WHERE demandPerson = ?', [newDeptName, name]);
+        }
+      }
+    }
 
     const updated = await db.get('SELECT * FROM orgs WHERE id = ?', [id]);
     res.json(updated);

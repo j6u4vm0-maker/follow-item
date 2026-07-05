@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useOrg } from '../context/OrgContext';
+import { useTasks } from '../context/TaskContext';
 import { Table, Button, Modal, Form, Input, Select, Space, Typography, Popconfirm, Tag, Radio } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
 
@@ -7,6 +8,7 @@ const { Title } = Typography;
 
 const OrgManage = () => {
   const { orgs, addOrg, updateOrg, deleteOrg, resetOrgs } = useOrg();
+  const { fetchTasks } = useTasks();
   
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingOrg, setEditingOrg] = useState(null);
@@ -20,16 +22,34 @@ const OrgManage = () => {
     setIsModalVisible(true);
   };
 
+  // 監聽 editingOrg 與顯示狀態，強制在打開時更新或重置 Form 欄位，解決 Ant Design 表單快取舊值的問題
+  React.useEffect(() => {
+    if (isModalVisible) {
+      if (editingOrg) {
+        form.setFieldsValue({
+          type: editingOrg.type || 'org',
+          name: editingOrg.name,
+          level: editingOrg.level || (editingOrg.type === 'person' ? '6' : '4'),
+          parentId: editingOrg.parentId || undefined
+        });
+      } else {
+        form.resetFields();
+      }
+    }
+  }, [editingOrg, isModalVisible, form]);
+
   const handleOk = () => {
-    form.validateFields().then(values => {
+    form.validateFields().then(async (values) => {
       if (values.parentId === 'none' || !values.parentId) {
         values.parentId = null;
       }
       if (editingOrg) {
-        updateOrg(editingOrg.id, values);
+        await updateOrg(editingOrg.id, values);
       } else {
-        addOrg(values);
+        await addOrg(values);
       }
+      // 聯動重載：強制刷新任務清單，確保更新後的部門/人員名稱即時渲染於所有任務相關元件
+      await fetchTasks();
       setIsModalVisible(false);
     });
   };

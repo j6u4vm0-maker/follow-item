@@ -6,6 +6,17 @@ import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
+const getDeptTagColor = (dept) => {
+  if (!dept) return 'default';
+  if (dept.includes('品質系統部')) return 'purple';
+  if (dept.includes('品質技術課')) return 'volcano';
+  if (dept.includes('品質系統課')) return 'orange';
+  if (dept.includes('品質技術組')) return 'blue';
+  if (dept.includes('供應商管理組')) return 'cyan';
+  if (dept.includes('實驗室')) return 'green';
+  return 'geekblue';
+};
+
 const HistoryTasks = () => {
   const { tasks, updateTask, deleteTask, deleteTasks } = useTasks();
 
@@ -75,7 +86,7 @@ const HistoryTasks = () => {
         const person = record.executingPerson;
         return (
           <Space size={4}>
-            <Tag color="default">{dept}</Tag>
+            <Tag color={getDeptTagColor(dept)}>{dept}</Tag>
             {person && <Tag color="default">{person}</Tag>}
           </Space>
         );

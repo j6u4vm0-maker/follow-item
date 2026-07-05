@@ -20,6 +20,17 @@ dayjs.updateLocale('zh-tw', {
   weekStart: 1
 });
 
+const getDeptTagColor = (dept) => {
+  if (!dept) return 'default';
+  if (dept.includes('品質系統部')) return 'purple';
+  if (dept.includes('品質技術課')) return 'volcano';
+  if (dept.includes('品質系統課')) return 'orange';
+  if (dept.includes('品質技術組')) return 'blue';
+  if (dept.includes('供應商管理組')) return 'cyan';
+  if (dept.includes('實驗室')) return 'green';
+  return 'geekblue';
+};
+
 const { Title, Text } = Typography;
 
 const CalendarView = () => {
@@ -258,7 +269,7 @@ const CalendarView = () => {
               </p>
               <p>
                 <strong>執行單位/人員：</strong> 
-                <Tag color="geekblue">{selectedTaskForView.executingDepartment}</Tag> 
+                <Tag color={getDeptTagColor(selectedTaskForView.executingDepartment)}>{selectedTaskForView.executingDepartment}</Tag> 
                 {selectedTaskForView.executingPerson && <Tag color="cyan">{selectedTaskForView.executingPerson}</Tag>}
               </p>
               <p>

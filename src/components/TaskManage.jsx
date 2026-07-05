@@ -16,6 +16,17 @@ const addDaysWithWeekendSkip = (startDate, daysToAdd) => {
   return target;
 };
 
+const getDeptTagColor = (dept) => {
+  if (!dept) return 'default';
+  if (dept.includes('品質系統部')) return 'purple';
+  if (dept.includes('品質技術課')) return 'volcano';
+  if (dept.includes('品質系統課')) return 'orange';
+  if (dept.includes('品質技術組')) return 'blue';
+  if (dept.includes('供應商管理組')) return 'cyan';
+  if (dept.includes('實驗室')) return 'green';
+  return 'geekblue';
+};
+
 const TaskManage = () => {
   const { tasks, addTask, updateTask, deleteTask, deleteTasks, resetTasks } = useTasks();
   const { orgs } = useOrg();
@@ -455,7 +466,7 @@ const TaskManage = () => {
         const person = record.executingPerson;
         return (
           <Space size={4} wrap>
-            <Tag color="geekblue" icon={<TeamOutlined />}>{dept}</Tag>
+            <Tag color={getDeptTagColor(dept)} icon={<TeamOutlined />}>{dept}</Tag>
             {person && <Tag color="cyan" icon={<UserOutlined />}>{person}</Tag>}
           </Space>
         );
