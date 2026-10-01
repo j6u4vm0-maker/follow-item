@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}設定登入帳號｜部門工作追蹤{% endblock %}
+{% block content %}
+<div class="org-modal-page"><div class="org-modal-backdrop"></div><form class="org-modal" method="post" novalidate>{% csrf_token %}
+  <header><div><p class="eyebrow">ACCOUNT ACCESS</p><h1>設定登入帳號</h1></div><a href="{% url 'account_management' %}">×</a></header>
+  <div class="account-person"><b>{{ object.display_name|default:"未命名人員" }}</b><span>{{ object.department.name|default:"尚未設定部門" }} · {{ object.get_role_display }}</span></div>
+  <div class="org-modal-fields">{% for field in form %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<b>*</b>{% endif %}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% if field.errors %}<div class="field-error">{{ field.errors|striptags }}</div>{% endif %}</div>{% endfor %}</div>
+  <footer><a href="{% url 'account_management' %}">取消</a><button class="primary" type="submit">儲存帳號</button></footer>
+</form></div>
+{% endblock %}

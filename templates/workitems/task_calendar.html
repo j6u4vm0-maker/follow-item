@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}工作行事曆｜部門工作追蹤{% endblock %}
+{% block content %}
+<div class="content-shell calendar-page">
+  <div class="page-head">
+    <div><p class="eyebrow">WORK CALENDAR</p><h1>工作行事曆</h1><p>依預計完成日查看授權範圍內的工作，點擊項目即可直接編輯。</p></div>
+    <div class="head-actions"><a class="primary" href="{% url 'task_create' %}">＋ 指派新工作</a></div>
+  </div>
+  <section class="card calendar-card">
+    <header class="calendar-toolbar">
+      <a href="?year={{ previous_month.year }}&month={{ previous_month.month }}" aria-label="上個月">‹</a>
+      <div><h2>{{ month_label }}</h2><span>本月共 {{ task_count }} 件工作</span></div>
+      <a href="?year={{ next_month.year }}&month={{ next_month.month }}" aria-label="下個月">›</a>
+      <a class="calendar-today" href="{% url 'task_calendar' %}">回到本月</a>
+    </header>
+    <div class="calendar-legend"><span><i class="status-not_started"></i>未開始</span><span><i class="status-in_progress"></i>進行中</span><span><i class="status-waiting"></i>等待</span><span><i class="status-completed"></i>已完成</span></div>
+    <div class="calendar-grid calendar-weekdays"><b>日</b><b>一</b><b>二</b><b>三</b><b>四</b><b>五</b><b>六</b></div>
+    <div class="calendar-month">
+      {% for week in calendar_weeks %}<div class="calendar-grid calendar-week">
+        {% for day in week %}<div class="calendar-day {% if not day.in_month %}outside{% endif %} {% if day.is_today %}today{% endif %}">
+          <div class="calendar-date"><span>{{ day.date.day }}</span>{% if day.is_today %}<small>今天</small>{% endif %}</div>
+          <div class="calendar-events">{% for task in day.tasks %}<a class="calendar-event status-{{ task.status }} priority-{{ task.priority }}" href="{% url 'task_detail' task.pk %}" title="{{ task.task_no }}｜{{ task.description|truncatechars:60 }}"><i></i><b>{{ task.title }}</b><small>{{ task.owner_department.name }}</small></a>{% endfor %}</div>
+        </div>{% endfor %}
+      </div>{% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

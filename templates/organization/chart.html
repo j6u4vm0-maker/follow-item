@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}組織架構與人員管理｜部門工作追蹤{% endblock %}
+{% block content %}
+<section class="workspace organization-workspace">
+  <div class="page-head console-head"><div><p class="eyebrow">ORGANIZATION DIRECTORY</p><h1>組織架構與人員管理</h1><p>依照總部、處、部、課、組顯示組織關係與所屬人員。</p></div>
+    {% if user.is_staff or user.role == 'admin' %}<div class="head-actions"><a class="outline-button" href="{% url 'department_create' %}">＋ 新增單位</a><a class="button-link" href="{% url 'organization_user_create' %}">＋ 新增人員</a></div>{% endif %}
+  </div>
+  <section class="card organization-card">
+    <div class="org-row org-head"><div>名稱</div><div>分類／職稱</div><div>隸屬單位</div><div>操作</div></div>
+    {% for row in organization_rows %}
+      <div class="org-row {{ row.kind }}" style="--depth:{{ row.depth }}">
+        <div class="org-name">
+          {% if row.kind == 'department' %}<span class="tree-toggle">−</span><span class="unit-icon">♙</span><b>{{ row.item.name }}</b>
+          {% else %}<span class="person-icon">♙</span><b>{{ row.item.display_name|default:row.item.username }}</b>{% endif %}
+        </div>
+        <div>{% if row.kind == 'department' %}<span class="type-badge type-{{ row.item.unit_type }}">{{ row.item.get_unit_type_display }} <small>{{ row.item.unit_type|title }}</small></span>{% else %}<span class="type-badge type-person">人員（{{ row.title }}）</span>{% endif %}</div>
+        <div>{% if row.kind == 'department' %}{{ row.item.parent.name|default:"—" }}{% else %}{{ row.item.department.name }}{% endif %}</div>
+        <div class="org-actions">{% if user.is_staff or user.role == 'admin' %}{% if row.kind == 'department' %}<a title="修改單位" href="{% url 'department_update' row.item.pk %}">✎</a>{% else %}<a title="修改人員" href="{% url 'organization_user_update' row.item.pk %}">✎</a>{% endif %}{% else %}<span>—</span>{% endif %}</div>
+      </div>
+    {% empty %}<div class="empty"><b>尚未建立組織資料</b></div>{% endfor %}
+  </section>
+</section>
+{% endblock %}

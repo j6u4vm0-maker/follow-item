@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{% if object %}編輯工作{% else %}指派新工作{% endif %}｜部門工作追蹤{% endblock %}
+{% block content %}
+<div class="task-modal-shell">
+  <form class="task-modal" method="post" novalidate>{% csrf_token %}
+    <header class="task-modal-header">
+      <div><p class="eyebrow">WORK ASSIGNMENT</p><h1>{% if object %}編輯工作 {{ object.task_no }}{% else %}指派新工作{% endif %}</h1></div>
+      <a class="modal-close" href="{% if object %}{% url 'task_detail' object.pk %}{% else %}{% url 'task_list' %}{% endif %}" aria-label="關閉">×</a>
+    </header>
+
+    <div class="task-modal-body">
+      {% if form.non_field_errors %}<div class="error">{{ form.non_field_errors }}</div>{% endif %}
+
+      <section class="compact-section">
+        <div class="compact-heading"><span>01</span><div><h2>工作內容</h2><p>填寫任務名稱、說明及整理方式。</p></div></div>
+        <div class="form-grid">
+          {% include "workitems/field.html" with field=form.title span="span-2" %}
+          {% include "workitems/field.html" with field=form.description span="span-2" %}
+          {% include "workitems/field.html" with field=form.project span="span-2" hint="選填；加入專案後會顯示於專案追蹤看板。" %}
+          {% include "workitems/field.html" with field=form.category hint="單一主分類，用於報表統計，例如例行工作、專案或改善事項。" %}
+          {% include "workitems/field.html" with field=form.tags hint="可複選，用於跨類別搜尋，例如緊急、稽核或跨部門。按住 Ctrl 可多選。" %}
+        </div>
+      </section>
+
+      <section class="compact-section">
+        <div class="compact-heading"><span>02</span><div><h2>需求與執行</h2><p>選定來源及負責單位後，人員選單會自動更新。</p></div></div>
+        <div class="form-grid">
+          {% include "workitems/field.html" with field=form.request_department hint="可先選部門縮小範圍；直接搜尋人員也會自動帶入其部門。" %}
+          <div class="field searchable-person-field"><label for="requestor-search">需求人<b>*</b></label><input id="requestor-search" type="search" list="requestor-options" placeholder="輸入姓名或帳號，搜尋已建立的人員" autocomplete="off"><datalist id="requestor-options"></datalist><div class="native-person-select">{{ form.requestor }}</div><small>選取人員後，系統會自動設定其所屬需求部門。</small>{% if form.requestor.errors %}<div class="field-error">{{ form.requestor.errors|striptags }}</div>{% endif %}</div>
+          {% include "workitems/field.html" with field=form.owner_department %}
+          <div class="field searchable-person-field"><label for="assignee-search">主要負責人<b>*</b></label><input id="assignee-search" type="search" list="assignee-options" placeholder="輸入姓名或帳號，搜尋已建立的人員" autocomplete="off"><datalist id="assignee-options"></datalist><div class="native-person-select">{{ form.primary_assignee }}</div><small>選取人員後，系統會自動設定其所屬負責部門。</small>{% if form.primary_assignee.errors %}<div class="field-error">{{ form.primary_assignee.errors|striptags }}</div>{% endif %}</div>
+          {% include "workitems/field.html" with field=form.collaborators span="span-2" hint="可按住 Ctrl 選取多位協作人員。" %}
+        </div>
+      </section>
+
+      <section class="compact-section">
+        <div class="compact-heading"><span>03</span><div><h2>時程與狀態</h2><p>設定預計期間、優先程度及目前進度。</p></div></div>
+        <div class="form-grid three-col">
+          {% include "workitems/field.html" with field=form.request_date %}
+          {% include "workitems/field.html" with field=form.planned_start_date %}
+          {% include "workitems/field.html" with field=form.due_date %}
+          <div class="date-shortcuts span-3"><span>快速設定完成日</span><button type="button" data-days="3">三天</button><button type="button" data-days="7">一週</button><button type="button" data-days="30">一個月</button></div>
+          {% include "workitems/field.html" with field=form.priority %}
+          {% include "workitems/field.html" with field=form.progress hint="請輸入 0 至 100" %}
+          <div></div>
+          {% include "workitems/field.html" with field=form.status span="span-3 status-field" %}
+          <div id="waiting-field" class="conditional-field span-3">{% include "workitems/field.html" with field=form.waiting_reason %}</div>
+          <div id="cancel-field" class="conditional-field span-3">{% include "workitems/field.html" with field=form.cancellation_reason %}</div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="modal-actions"><a href="{% if object %}{% url 'task_detail' object.pk %}{% else %}{% url 'task_list' %}{% endif %}">取消</a><button class="primary" type="submit">{% if object %}儲存變更{% else %}發布工作{% endif %}</button></footer>
+  </form>
+</div>
+<script>
+async function loadUsers(departmentSelect,userSelect,searchInput,datalist,state,preserve=false){const id=departmentSelect.value;if(!id){userSelect.innerHTML='<option value="">---------</option>';state.matches=[];renderOptions(datalist,state.matches);searchInput.value='';return;}const selected=preserve?userSelect.value:'';const r=await fetch(`/tasks/department/${id}/users/`);const data=await r.json();const departmentName=departmentSelect.options[departmentSelect.selectedIndex]?.text||'';userSelect.innerHTML='<option value="">---------</option>'+data.users.map(u=>`<option value="${u.id}" data-username="${u.username}" ${String(u.id)===selected?'selected':''}>${u.display_name||u.username}</option>`).join('');state.matches=data.users.map(u=>({...u,department_id:Number(id),department_name:departmentName}));renderOptions(datalist,state.matches);const selectedOption=userSelect.options[userSelect.selectedIndex];searchInput.value=selectedOption&&selectedOption.value?`${selectedOption.textContent}（${selectedOption.dataset.username}） · ${departmentName}`:'';}
+const reqDept=document.querySelector('#id_request_department'),reqUser=document.querySelector('#id_requestor'),ownerDept=document.querySelector('#id_owner_department'),ownerUser=document.querySelector('#id_primary_assignee');
+const requestorSearch=document.querySelector('#requestor-search'),requestorOptions=document.querySelector('#requestor-options'),assigneeSearch=document.querySelector('#assignee-search'),assigneeOptions=document.querySelector('#assignee-options');
+const requestorState={matches:[],timer:null},assigneeState={matches:[],timer:null};
+function personLabel(person){return `${person.display_name||person.username}（${person.username}） · ${person.department_name||''}`;}
+function renderOptions(datalist,matches){datalist.innerHTML=matches.map(person=>`<option value="${personLabel(person)}"></option>`).join('');}
+function selectPerson(person,departmentSelect,userSelect,searchInput){departmentSelect.value=String(person.department_id);userSelect.innerHTML=`<option value="${person.id}" selected>${person.display_name||person.username}</option>`;searchInput.value=personLabel(person);}
+function setupPersonSearch(searchInput,datalist,departmentSelect,userSelect,state){searchInput?.addEventListener('input',()=>{const value=searchInput.value.trim();const exact=state.matches.find(person=>personLabel(person).toLowerCase()===value.toLowerCase());if(exact){selectPerson(exact,departmentSelect,userSelect,searchInput);return;}userSelect.value='';clearTimeout(state.timer);if(!value){state.matches=[];renderOptions(datalist,state.matches);return;}state.timer=setTimeout(async()=>{const response=await fetch(`/tasks/users/search/?q=${encodeURIComponent(value)}`);const data=await response.json();state.matches=data.users;renderOptions(datalist,state.matches);},180);});searchInput?.addEventListener('change',()=>{const exact=state.matches.find(person=>personLabel(person).toLowerCase()===searchInput.value.trim().toLowerCase());if(exact)selectPerson(exact,departmentSelect,userSelect,searchInput);});departmentSelect?.addEventListener('change',()=>{searchInput.value='';loadUsers(departmentSelect,userSelect,searchInput,datalist,state);});if(departmentSelect?.value)loadUsers(departmentSelect,userSelect,searchInput,datalist,state,true);}
+setupPersonSearch(requestorSearch,requestorOptions,reqDept,reqUser,requestorState);
+setupPersonSearch(assigneeSearch,assigneeOptions,ownerDept,ownerUser,assigneeState);
+function statusValue(){return document.querySelector('input[name="status"]:checked')?.value||'';}
+const waitingField=document.querySelector('#waiting-field'),cancelField=document.querySelector('#cancel-field');
+function toggleReasons(){const value=statusValue();waitingField.hidden=value!=='waiting';cancelField.hidden=value!=='cancelled';}
+document.querySelectorAll('input[name="status"]').forEach(input=>input.addEventListener('change',toggleReasons));toggleReasons();
+document.querySelectorAll('[data-days]').forEach(button=>button.addEventListener('click',()=>{const start=document.querySelector('#id_planned_start_date');const due=document.querySelector('#id_due_date');const base=start.value?new Date(start.value+'T00:00:00'):new Date();base.setDate(base.getDate()+Number(button.dataset.days));due.value=`${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,'0')}-${String(base.getDate()).padStart(2,'0')}`;}));
+const proposedDate=document.querySelector('#id_request_date'),plannedStartDate=document.querySelector('#id_planned_start_date');
+if(proposedDate&&plannedStartDate){let previousProposedDate=proposedDate.value;proposedDate.addEventListener('change',()=>{if(!plannedStartDate.value||plannedStartDate.value===previousProposedDate)plannedStartDate.value=proposedDate.value;previousProposedDate=proposedDate.value;});}
+</script>
+{% endblock %}

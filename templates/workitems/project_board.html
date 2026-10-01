@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}專案追蹤看板｜部門工作追蹤{% endblock %}
+{% block content %}
+<section class="workspace project-workspace">
+  <div class="page-head console-head"><div><p class="eyebrow">PROJECT PORTFOLIO</p><h1>專案追蹤看板</h1><p>切換專案，掌握整體完成率與所屬工作的執行狀態。</p></div>{% if can_create %}<a class="button-link" href="{% url 'project_create' %}">＋ 建立新專案</a>{% endif %}</div>
+  {% if projects %}
+  <nav class="project-tabs" aria-label="專案切換">{% for project in projects %}<a class="{% if selected_project.pk == project.pk %}active{% endif %}" href="?project={{ project.pk }}"><span>▣</span>{{ project.name }}<b>{{ project.progress }}%</b></a>{% endfor %}</nav>
+  <section class="project-summary">
+    <div><span class="badge status-{{ selected_project.status }}">{{ selected_project.get_status_display }}</span><h2>{{ selected_project.name }}</h2><p>{{ selected_project.description|default:"尚未填寫專案說明" }}</p><small>{{ selected_project.owner_department.name }} · {{ selected_project.manager }} · {{ selected_project.start_date|date:"Y/m/d" }}–{{ selected_project.due_date|date:"Y/m/d" }}</small></div>
+    <div class="project-progress"><div><span>整體完成進度</span><strong id="project-progress-value">{{ selected_project.progress }}%</strong></div><div class="progress-track"><i id="project-progress-bar" style="width:{{ selected_project.progress }}%"></i></div><small id="project-progress-counts">共 {{ selected_project.task_count }} 件工作，已完成 {{ selected_project.completed_count }} 件</small></div>
+  </section>
+  {% if messages %}<div class="flash-stack">{% for message in messages %}<div class="flash {{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+  {% if can_create %}
+  <details class="quick-entry" open>
+    <summary><div><b>＋ 快速加入工作項目</b><span>可連續輸入，或將 Excel 的一整欄工作名稱貼到第一格</span></div><span>展開／收合</span></summary>
+    <form method="post" action="{% url 'project_bulk_task_create' selected_project.pk %}">{% csrf_token %}
+      <div class="quick-grid quick-head"><div>工作名稱</div><div>工作說明</div><div>負責人</div><div>預計完成</div><div>優先度</div><div></div></div>
+      <div id="quick-rows">{% for row in quick_rows %}<div class="quick-grid quick-row"><div><input class="quick-title" name="title" placeholder="輸入工作名稱"></div><div><input class="quick-description" name="description" placeholder="輸入工作說明"></div><div><select name="assignee">{% for person in quick_assignees %}<option value="{{ person.pk }}" {% if person.pk == selected_project.manager_id %}selected{% endif %}>{{ person.display_name|default:person.username }}</option>{% endfor %}</select></div><div><input name="due_date" type="date" value="{{ selected_project.due_date|date:'Y-m-d' }}"></div><div><select name="priority">{% for value,label in priorities %}<option value="{{ value }}" {% if value == 'medium' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div><button class="remove-row" type="button" title="清除此列">×</button></div></div>{% endfor %}</div>
+      <template id="quick-row-template"><div class="quick-grid quick-row"><div><input class="quick-title" name="title" placeholder="輸入工作名稱"></div><div><input class="quick-description" name="description" placeholder="輸入工作說明"></div><div><select name="assignee">{% for person in quick_assignees %}<option value="{{ person.pk }}" {% if person.pk == selected_project.manager_id %}selected{% endif %}>{{ person.display_name|default:person.username }}</option>{% endfor %}</select></div><div><input name="due_date" type="date" value="{{ selected_project.due_date|date:'Y-m-d' }}"></div><div><select name="priority">{% for value,label in priorities %}<option value="{{ value }}" {% if value == 'medium' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div><div><button class="remove-row" type="button">×</button></div></div></template>
+      <div class="quick-footer"><button id="add-quick-rows" type="button">＋ 再加 5 列</button><span>空白列不會建立</span><button class="primary" type="submit">一次建立全部工作</button></div>
+    </form>
+  </details>
+  {% endif %}
+  <div class="project-actions">{% if can_create %}<a href="{% url 'task_create' %}?project={{ selected_project.pk }}">＋ 新增專案工作</a>{% endif %}</div>
+  <section id="project-task-list" class="card table-card"><div class="table-title"><div><b>專案工作清單</b><span>點狀態可直接選擇階段，點工作名稱可開啟完整內容</span></div><span id="project-active-count">{{ project_tasks|length }} 筆進行中</span></div>
+    {% if project_tasks %}<div class="table-wrap"><table class="task-table"><thead><tr><th>工作名稱／編號</th><th>狀態</th><th>開始日期</th><th>預計完成</th><th>需求單位</th><th>執行單位／人員</th><th>優先度</th><th>進度</th><th>操作</th></tr></thead><tbody>{% for task in project_tasks %}<tr id="project-task-row-{{ task.pk }}" class="{% if task.is_overdue %}overdue{% endif %}"><td class="task-name"><a href="{% url 'task_detail' task.pk %}"><b>{{ task.title }}</b><small>{{ task.task_no }} · {{ task.category.name }}</small></a></td><td>{% if task.user_can_edit %}{% include "workitems/_quick_status_control.html" with task=task %}{% else %}<span class="badge status-{{ task.status }}"><i></i>{{ task.get_status_display }}</span>{% endif %}</td><td>{{ task.planned_start_date|date:"Y/m/d"|default:"—" }}</td><td>{{ task.due_date|date:"Y/m/d" }}</td><td>{{ task.request_department.name }}</td><td><b>{{ task.owner_department.name }}</b><small>{{ task.primary_assignee }}</small></td><td><span class="badge priority-{{ task.priority }}">{{ task.get_priority_display }}</span></td><td><span class="progress-text">{{ task.progress }}%</span></td><td>{% if task.user_can_edit %}<a class="complete-task-link" href="{% url 'task_detail' task.pk %}">直接編輯</a>{% else %}<a href="{% url 'task_detail' task.pk %}">查看</a>{% endif %}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty"><b>這個專案目前沒有進行中的工作</b><p>新增工作後會顯示在這裡；已完成工作可到歷史紀錄查看。</p></div>{% endif %}
+  </section>
+  {% else %}<section class="card empty project-empty"><b>尚未建立專案</b><p>先建立第一個專案，再將相關工作集中追蹤。</p>{% if can_create %}<a class="button-link" href="{% url 'project_create' %}">建立第一個專案</a>{% endif %}</section>{% endif %}
+</section>
+<div id="completion-countdown" class="completion-countdown" hidden><div><b>即將完成工作</b><span id="completion-message"></span></div><strong id="completion-seconds">5</strong><button type="button" id="cancel-completion">取消</button></div>
+<script>
+const quickRows=document.querySelector('#quick-rows'),rowTemplate=document.querySelector('#quick-row-template');
+function addQuickRow(){const row=rowTemplate.content.firstElementChild.cloneNode(true);quickRows.appendChild(row);return row;}
+document.querySelector('#add-quick-rows')?.addEventListener('click',()=>{for(let index=0;index<5;index++)addQuickRow();});
+quickRows?.addEventListener('click',event=>{if(event.target.classList.contains('remove-row')){const row=event.target.closest('.quick-row');row.querySelector('.quick-title').value='';}});
+quickRows?.addEventListener('paste',event=>{if(!event.target.classList.contains('quick-title'))return;const lines=event.clipboardData.getData('text').split(/\r?\n/).map(line=>line.trim()).filter(Boolean);if(lines.length<2&&!lines[0]?.includes('\t'))return;event.preventDefault();let row=event.target.closest('.quick-row');let rows=[...quickRows.querySelectorAll('.quick-row')];let position=rows.indexOf(row);lines.forEach((line,index)=>{let target=rows[position+index];if(!target){target=addQuickRow();rows.push(target);}const cells=line.split('\t');target.querySelector('.quick-title').value=(cells[0]||'').trim();target.querySelector('.quick-description').value=(cells[1]||'').trim();});});
+</script>
+{% include "workitems/_quick_status_script.html" %}
+{% endblock %}

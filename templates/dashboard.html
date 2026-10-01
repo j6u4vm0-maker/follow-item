@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}儀表板｜TaskFlow{% endblock %}
+{% block content %}
+<div class="dashboard-workspace">
+  <header class="page-head dashboard-hero">
+    <div>
+      <span class="eyebrow">TODAY COMMAND CENTER</span>
+      <h1>{{ user.display_name|default:user.username }}，今天要做什麼</h1>
+      <p>{{ today|date:"Y年n月j日" }} · 本週 {{ week_start|date:"n/j" }}–{{ week_end|date:"n/j" }}，工作、專案、問題與會議集中查看。</p>
+    </div>
+    <div class="dashboard-head-actions">
+      <a class="outline-button" href="{% url 'issue_note_board' %}">＋ 記錄問題</a>
+      <a class="primary-btn" href="{% url 'task_create' %}">＋ 新增工作</a>
+    </div>
+  </header>
+
+  <section class="dashboard-metrics" aria-label="今日工作概況">
+    {% for metric in metrics %}
+      <article class="dashboard-metric tone-{{ metric.tone }}">
+        <span>{{ metric.label }}</span><strong>{{ metric.value }}</strong><small>{{ metric.hint }}</small>
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="dashboard-priority-grid">
+    <article class="dashboard-panel">
+      <header><div><span class="section-kicker">TODAY</span><h2>今天要完成 <small class="panel-count">{{ today_tasks.count|add:today_followups.count }} 項</small></h2></div><a href="{% url 'task_list' %}">查看工作追蹤 →</a></header>
+      <div class="dashboard-agenda-list">
+        {% for task in today_tasks %}
+          <a class="agenda-row" href="{% url 'task_detail' task.pk %}">
+            <span class="agenda-date today-mark">今日</span>
+            <span class="agenda-main"><b>{{ task.title }}</b><small>{{ task.task_no }} · {{ task.owner_department.name }}</small></span>
+            <span class="agenda-status status-{{ task.status }}">{{ task.get_status_display }}</span>
+          </a>
+        {% endfor %}
+        {% for item in today_followups %}
+          <a class="agenda-row meeting-action" href="{% url 'meeting_detail' item.meeting_id %}">
+            <span class="agenda-date today-mark">會議</span>
+            <span class="agenda-main"><b>{{ item.next_action }}</b><small>{{ item.meeting.title }}{% if item.owner %} · {{ item.owner.display_name|default:item.owner.username }}{% endif %}</small></span>
+            <span class="agenda-status">追蹤事項</span>
+          </a>
+        {% endfor %}
+        {% if not today_tasks and not today_followups %}<div class="dashboard-empty"><b>今天沒有到期事項</b><span>可以提前處理本週工作，或新增一筆工作。</span></div>{% endif %}
+      </div>
+    </article>
+
+    <article class="dashboard-panel">
+      <header><div><span class="section-kicker">THIS WEEK</span><h2>本週接下來要完成 <small class="panel-count">{{ week_tasks.count|add:week_followups.count }} 項</small></h2></div><a href="{% url 'task_calendar' %}">開啟行事曆 →</a></header>
+      <div class="dashboard-agenda-list">
+        {% for task in week_tasks %}
+          <a class="agenda-row" href="{% url 'task_detail' task.pk %}">
+            <span class="agenda-date">{{ task.due_date|date:"D" }}<b>{{ task.due_date|date:"n/j" }}</b></span>
+            <span class="agenda-main"><b>{{ task.title }}</b><small>{{ task.task_no }} · {{ task.owner_department.name }}</small></span>
+            <span class="agenda-status status-{{ task.status }}">{{ task.get_status_display }}</span>
+          </a>
+        {% endfor %}
+        {% for item in week_followups %}
+          <a class="agenda-row meeting-action" href="{% url 'meeting_detail' item.meeting_id %}">
+            <span class="agenda-date">追蹤<b>{{ item.due_date|date:"n/j" }}</b></span>
+            <span class="agenda-main"><b>{{ item.next_action }}</b><small>{{ item.meeting.title }}{% if item.owner %} · {{ item.owner.display_name|default:item.owner.username }}{% endif %}</small></span>
+            <span class="agenda-status">會議事項</span>
+          </a>
+        {% endfor %}
+        {% if not week_tasks and not week_followups %}<div class="dashboard-empty"><b>本週沒有其他到期事項</b><span>目前的工作安排很乾淨。</span></div>{% endif %}
+      </div>
+    </article>
+  </section>
+
+  {% if overdue_tasks %}
+  <section class="dashboard-panel dashboard-overdue">
+    <header><div><span class="section-kicker">ATTENTION</span><h2>需要立即關注的逾期工作</h2></div><a href="{% url 'task_list' %}">前往處理 →</a></header>
+    <div class="overdue-grid">
+      {% for task in overdue_tasks %}
+        <a href="{% url 'task_detail' task.pk %}"><span>{{ task.due_date|date:"n/j" }}</span><b>{{ task.title }}</b><small>{{ task.primary_assignee.display_name|default:task.primary_assignee.username }} · {{ task.get_priority_display }}優先</small></a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="dashboard-overview-grid">
+    <article class="dashboard-panel compact-panel">
+      <header><div><span class="section-kicker">MEETINGS</span><h2>本週會議 <small class="panel-count">{{ week_meeting_count }} 場</small></h2></div><a href="{% url 'meeting_center' %}">會議中心 →</a></header>
+      <div class="compact-list">
+        {% for meeting in today_meetings %}<a href="{% url 'meeting_detail' meeting.pk %}"><time>今天 {{ meeting.scheduled_at|date:"H:i" }}</time><b>{{ meeting.title }}</b><small>{{ meeting.get_status_display }} · {{ meeting.chair.display_name|default:meeting.chair.username }}</small></a>{% endfor %}
+        {% for meeting in week_meetings %}<a href="{% url 'meeting_detail' meeting.pk %}"><time>{{ meeting.scheduled_at|date:"m/d H:i" }}</time><b>{{ meeting.title }}</b><small>{{ meeting.get_status_display }} · {{ meeting.chair.display_name|default:meeting.chair.username }}</small></a>{% endfor %}
+        {% if not today_meetings and not week_meetings %}<div class="compact-empty">本週尚無會議</div>{% endif %}
+      </div>
+    </article>
+
+    <article class="dashboard-panel compact-panel">
+      <header><div><span class="section-kicker">PROJECTS</span><h2>進行中專案 <small class="panel-count">{{ active_project_count }} 個</small></h2></div><a href="{% url 'project_board' %}">專案看板 →</a></header>
+      <div class="project-dashboard-list">
+        {% for project in active_projects %}
+          <a href="{% url 'project_board' %}?project={{ project.pk }}"><div><b>{{ project.name }}</b><span>{{ project.progress }}%</span></div><small>{{ project.owner_department.name }} · {{ project.due_date|date:"Y/m/d" }}</small><i><em style="width:{{ project.progress }}%"></em></i></a>
+        {% empty %}<div class="compact-empty">目前沒有進行中的專案</div>{% endfor %}
+      </div>
+    </article>
+
+    <article class="dashboard-panel compact-panel">
+      <header><div><span class="section-kicker">ISSUES</span><h2>待處理問題 <small class="panel-count">{{ open_note_count }} 件</small></h2></div><a href="{% url 'issue_note_board' %}">問題便簽 →</a></header>
+      {% if must_do_note_count %}<div class="must-do-alert">今日必做 {{ must_do_note_count }} 件</div>{% endif %}
+      <div class="compact-list issue-dashboard-list">
+        {% for note in open_notes %}<a href="{% url 'issue_note_board' %}"><span class="note-state state-{{ note.status }}">{{ note.get_status_display }}</span><b>{{ note.title }}</b><small>{{ note.reported_by_name|default:note.created_by.display_name }} · {{ note.updated_at|date:"m/d H:i" }}</small></a>{% empty %}<div class="compact-empty">目前沒有待處理問題</div>{% endfor %}
+      </div>
+    </article>
+  </section>
+
+  <nav class="dashboard-shortcuts" aria-label="常用功能">
+    <b>快速前往</b><a href="{% url 'task_list' %}">工作追蹤</a><a href="{% url 'task_calendar' %}">工作行事曆</a><a href="{% url 'meeting_center' %}">會議中心</a><a href="{% url 'project_board' %}">專案看板</a><a href="{% url 'issue_note_board' %}">問題便簽</a>
+  </nav>
+</div>
+{% endblock %}

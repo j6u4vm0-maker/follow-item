@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}系統設定｜部門工作追蹤{% endblock %}
+{% block content %}
+<section class="workspace settings-workspace">
+  <div class="page-head"><div><p class="eyebrow">SYSTEM SETTINGS</p><h1>系統設定</h1><p>直接在 TaskFlow 中維護工作類別、標籤與顯示顏色。</p></div></div>
+  {% if messages %}<div class="flash-stack">{% for message in messages %}<div class="flash {{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+  <div class="settings-grid">
+    <section id="categories" class="card settings-panel">
+      <header><div><h2>工作類別</h2><p>設定工作單使用的分類及顯示順序。</p></div><span>{{ task_categories|length }} 個類別</span></header>
+      <div class="settings-list settings-category-list">
+        <div class="settings-list-head"><span>類別名稱</span><span>順序</span><span>啟用</span><span>操作</span></div>
+        {% for category in task_categories %}<form method="post" class="settings-row">{% csrf_token %}<input type="hidden" name="id" value="{{ category.pk }}"><input name="name" value="{{ category.name }}" required><input name="sort_order" type="number" min="0" value="{{ category.sort_order }}"><label class="setting-check"><input name="is_active" type="checkbox" {% if category.is_active %}checked{% endif %}><span>啟用</span></label><div class="setting-actions"><button name="action" value="save_category" type="submit">儲存修改</button><button class="delete-setting" name="action" value="delete_category" type="submit" formnovalidate onclick="return confirm('確定刪除「{{ category.name|escapejs }}」？若已被工作使用，系統會改為停用。')">刪除</button></div></form>{% endfor %}
+        <form id="new-category" method="post" class="settings-row settings-new">{% csrf_token %}<input name="name" placeholder="新增類別名稱" required><input name="sort_order" type="number" min="0" value="0"><label class="setting-check"><input name="is_active" type="checkbox" checked><span>啟用</span></label><button class="primary" name="action" value="save_category" type="submit">＋ 新增</button></form>
+      </div>
+    </section>
+    <section id="tags" class="card settings-panel">
+      <header><div><h2>工作標籤與顏色</h2><p>可直接選色，也能輸入十六進位色碼。</p></div><span>{{ task_tags|length }} 個標籤</span></header>
+      <div class="settings-list settings-tag-list">
+        <div class="settings-list-head"><span>標籤名稱</span><span>顏色</span><span>啟用</span><span>操作</span></div>
+        {% for tag in task_tags %}<form method="post" class="settings-row">{% csrf_token %}<input type="hidden" name="id" value="{{ tag.pk }}"><input name="name" value="{{ tag.name }}" required><div class="setting-color"><input type="color" value="{{ tag.color }}"><input name="color" value="{{ tag.color }}" maxlength="7" pattern="#[0-9A-Fa-f]{6}" required></div><label class="setting-check"><input name="is_active" type="checkbox" {% if tag.is_active %}checked{% endif %}><span>啟用</span></label><div class="setting-actions"><button name="action" value="save_tag" type="submit">儲存修改</button><button class="delete-setting" name="action" value="delete_tag" type="submit" formnovalidate onclick="return confirm('確定刪除「{{ tag.name|escapejs }}」？若已被工作使用，系統會改為停用。')">刪除</button></div></form>{% endfor %}
+        <form id="new-tag" method="post" class="settings-row settings-new">{% csrf_token %}<input name="name" placeholder="新增標籤名稱" required><div class="setting-color"><input type="color" value="#2874C7"><input name="color" value="#2874C7" maxlength="7" pattern="#[0-9A-Fa-f]{6}" required></div><label class="setting-check"><input name="is_active" type="checkbox" checked><span>啟用</span></label><button class="primary" name="action" value="save_tag" type="submit">＋ 新增</button></form>
+      </div>
+    </section>
+  </div>
+</section>
+<script>document.querySelectorAll('.setting-color').forEach(group=>{const picker=group.querySelector('[type=color]'),text=group.querySelector('[name=color]');picker.addEventListener('input',()=>text.value=picker.value.toUpperCase());text.addEventListener('input',()=>{if(/^#[0-9a-f]{6}$/i.test(text.value))picker.value=text.value;});});</script>
+{% endblock %}

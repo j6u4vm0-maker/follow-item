@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}會議中心｜TaskFlow{% endblock %}
+{% block content %}
+<div class="workspace meeting-page">
+<section class="page-head meeting-head">
+  <div><span class="eyebrow">MEETING COMMAND CENTER</span><h1>會議中心</h1><p>把專案會議、例行週會與每日晨會的討論，直接接到工作追蹤。</p></div>
+  {% if can_manage %}<a class="primary-btn" href="{% url 'meeting_series_create' %}">＋建立會議系列</a>{% endif %}
+</section>
+{% if messages %}<div class="flash-stack">{% for message in messages %}<div class="flash success">{{ message }}</div>{% endfor %}</div>{% endif %}
+
+{% if active_meetings %}
+<section class="meeting-live-strip"><b>● 會議進行中</b>{% for meeting in active_meetings %}<a href="{% url 'meeting_detail' meeting.pk %}">{{ meeting.title }} <span>繼續記錄 →</span></a>{% endfor %}</section>
+{% endif %}
+
+<section class="meeting-section-head"><div><h2>我的會議</h2><p>先選會議卡片開始；系統會自動帶入關聯專案或組織的未完成工作。</p></div></section>
+<div class="meeting-card-grid">
+  {% for series in series_cards %}
+  <article class="meeting-series-card type-{{ series.meeting_type }}">
+    <div class="meeting-card-top">
+      <span class="meeting-type">{{ series.get_meeting_type_display }}</span>
+      {% if series.project %}
+        <a href="{% url 'project_board' %}?project={{ series.project.pk }}" style="text-decoration:none;" title="點擊前往「{{ series.project.name }}」專案看板">
+          <span class="meeting-open-count" style="color:#1477ff; font-weight:800; border-bottom:2px dashed #96c2ff; padding-bottom:2px;">{{ series.open_tasks }}<small style="color:#1477ff; font-weight:600;"> 件待追蹤 ↗</small></span>
+        </a>
+      {% elif series.department %}
+        <a href="{% url 'task_list' %}?departments={{ series.department.pk }}" style="text-decoration:none;" title="點擊前往「{{ series.department.name }}」任務追蹤">
+          <span class="meeting-open-count" style="color:#1477ff; font-weight:800; border-bottom:2px dashed #96c2ff; padding-bottom:2px;">{{ series.open_tasks }}<small style="color:#1477ff; font-weight:600;"> 件待追蹤 ↗</small></span>
+        </a>
+      {% else %}
+        <span class="meeting-open-count">{{ series.open_tasks }}<small> 件待追蹤</small></span>
+      {% endif %}
+    </div>
+    <h3>{{ series.name }}</h3>
+    <p class="meeting-scope">
+      {% if series.project %}
+        <a href="{% url 'project_board' %}?project={{ series.project.pk }}" style="color:#1477ff; text-decoration:none; font-weight:600;" title="前往專案看板">▣ {{ series.project.name }} ↗</a>
+      {% elif series.department %}
+        <a href="{% url 'task_list' %}?departments={{ series.department.pk }}" style="color:#3973c7; text-decoration:none; font-weight:600;" title="前往組織任務">♙ {{ series.department.name }} ↗</a>
+      {% endif %}
+    </p>
+    <dl class="meeting-meta"><div><dt>召開頻率</dt><dd>{{ series.frequency|default:"依需要召開" }}</dd></div><div><dt>主席</dt><dd>{{ series.chair }}</dd></div><div><dt>記錄</dt><dd>{{ series.recorder }}</dd></div></dl>
+    {% if series.latest_meeting %}<p class="meeting-last">最近一次：{{ series.latest_meeting.scheduled_at|date:"Y/m/d H:i" }} · {{ series.latest_meeting.get_status_display }}</p>{% endif %}
+    {% if can_manage %}
+      <div style="display:flex; gap:8px; margin-top:14px; align-items:center;">
+        <form method="post" action="{% url 'meeting_start' series.pk %}" style="flex:1; margin:0;">
+          {% csrf_token %}
+          <button class="meeting-start" type="submit" style="padding:9px 12px; font-size:13px; border-radius:8px; width:100%; cursor:pointer; font-weight:700;">{% if series.latest_meeting.status == 'in_progress' %}繼續會議{% else %}開始本次會議{% endif %} →</button>
+        </form>
+        <a href="{% url 'meeting_series_update' series.pk %}" style="padding:8px 14px; font-size:13px; font-weight:700; background:#eef5ff; color:#1477ff; border:1px solid #bae0ff; border-radius:8px; text-decoration:none; height:38px; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; transition:all 0.2s;">編輯</a>
+        <form method="post" action="{% url 'meeting_series_delete' series.pk %}" style="margin:0;" onsubmit="return confirm('確定要刪除「{{ series.name }}」會議系列嗎？刪除後無法復原。');">
+          {% csrf_token %}
+          <button type="submit" style="padding:8px 14px; font-size:13px; font-weight:700; color:#d92f45; background:#fff5f5; border:1px solid #ffccc7; border-radius:8px; height:38px; cursor:pointer; white-space:nowrap; transition:all 0.2s;">刪除</button>
+        </form>
+      </div>
+    {% endif %}
+  </article>
+  {% empty %}<div class="empty-panel"><h3>尚未建立會議系列</h3><p>先建立一個專案會議或例行會議，即可開始使用。</p></div>{% endfor %}
+</div>
+
+<section class="meeting-history-panel"><div class="meeting-section-head"><div><h2>最近會議紀錄</h2><p>已結束的會議仍可開啟檢視決議與後續行動。</p></div></div>
+  <div class="meeting-history-list">{% for meeting in recent_meetings %}<a href="{% url 'meeting_detail' meeting.pk %}"><span><b>{{ meeting.title }}</b><small>{{ meeting.series.get_meeting_type_display }} · 主席 {{ meeting.chair }}</small></span><time>{{ meeting.ended_at|date:"Y/m/d H:i" }}</time></a>{% empty %}<p class="muted">尚無已結束會議。</p>{% endfor %}</div>
+</section>
+</div>
+{% endblock %}

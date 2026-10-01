@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}{{ meeting.title }} - 會議紀錄{% endblock %}
+{% block content %}
+<div class="page-container" style="max-width:900px; margin:20px auto; background:white; padding:40px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+  <div style="text-align:right; margin-bottom:20px;" class="no-print">
+    <a href="{% url 'meeting_export_excel' meeting.pk %}" class="button" style="margin-right: 10px;">下載 Excel</a>
+    <button onclick="window.print()" class="primary">列印 / 匯出 PDF</button>
+  </div>
+  
+  <style>
+  .record-header { text-align: center; margin-bottom: 30px; font-size: 24px; font-weight: bold; letter-spacing: 2px; }
+  .record-meta { margin-bottom: 20px; border: 2px solid #b71c1c; padding: 15px; font-size: 14px; line-height: 1.8; }
+  .record-meta-row { display: flex; gap: 40px; }
+  .record-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+  .record-table th { background: #d1f0ed; border: 1px solid #333; padding: 10px; font-weight: bold; text-align: center; }
+  .record-table td { border: 1px solid #333; padding: 10px; vertical-align: top; }
+  .record-footer { color: #b71c1c; font-size: 12px; margin-top: 20px; }
+  .no-print { display: block; }
+  @media print {
+    body { background: white; margin: 0; padding: 0; }
+    .page-container { box-shadow: none; margin: 0; padding: 0; max-width: 100%; }
+    .no-print { display: none !important; }
+  }
+  </style>
+
+  <div class="record-header">{{ meeting.title }} 會 議 記 錄</div>
+  
+  <div class="record-meta">
+    <div><span>會議名稱：</span>{{ meeting.title }}</div>
+    <div><span>會議日期：</span>{{ meeting.started_at|default:meeting.scheduled_at|date:'Y/m/d' }}</div>
+    <div><span>會議地點：</span>{{ meeting.location|default:meeting.series.location|default:'(依行事曆通知)' }}</div>
+    <div class="record-meta-row">
+      <div><span>主 席：</span>{{ meeting.chair }}</div>
+      <div><span>記 錄：</span>{{ meeting.recorder }}</div>
+    </div>
+    <div>
+      <span>出席人員：</span>
+      {% for user in meeting.attendees.all %}
+        {% if user.display_name != "系統管理員" %}
+          {{ user }}{% if not forloop.last %}、{% endif %}
+        {% endif %}
+      {% empty %}
+      無
+      {% endfor %}
+    </div>
+    <div>
+      <span>缺席人員：</span>
+      {% for user in meeting.absentees.all %}
+        {% if user.display_name != "系統管理員" %}
+          {{ user }}{% if not forloop.last %}、{% endif %}
+        {% endif %}
+      {% empty %}
+      無
+      {% endfor %}
+    </div>
+  </div>
+
+  <table class="record-table">
+    <thead>
+      <tr>
+        <th style="width:50px;">編號</th>
+        <th style="width:200px;">議案</th>
+        <th>決議</th>
+        <th style="width:80px;">執行人</th>
+        <th style="width:100px;">完成期限</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in meeting.items.all %}
+      <tr>
+        <td style="text-align:center;">{{ forloop.counter }}</td>
+        <td>{{ item.topic }}</td>
+        <td>{{ item.decision|linebreaksbr }}</td>
+        <td style="text-align:center;">{{ item.owner|default:"All" }}</td>
+        <td style="text-align:center;">{{ item.due_date|date:'Y-m-d'|default:"-" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" style="text-align:center;">本次無討論事項</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="record-footer">※未出席會議的人員如對會議內容有異議，請於3個工作天內提出，並通知所有會議相關人員</div>
+</div>
+{% endblock %}

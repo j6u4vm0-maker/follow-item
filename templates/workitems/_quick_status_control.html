@@ -1,0 +1,3 @@
+<div class="quick-status-control">
+  <button type="button" class="badge status-{{ task.status }} quick-status" data-url="{% url 'task_quick_status' task.pk %}" data-task-id="{{ task.pk }}" data-status="{{ task.status }}" data-task="{{ task.title }}" data-waiting-reason="{{ task.waiting_reason|default:''|escape }}" title="點擊切換到下一個狀態"><i></i><span>{{ task.get_status_display }}</span><b>›</b></button>
+</div>

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}登入帳號管理｜部門工作追蹤{% endblock %}
+{% block content %}
+<section class="workspace account-workspace">
+  <div class="page-head"><div><p class="eyebrow">SYSTEM ACCESS</p><h1>登入帳號管理</h1><p>人員與組織資料分開管理；在此設定使用者名稱及登入密碼。</p></div></div>
+  <form class="account-search" method="get"><input type="search" name="q" value="{{ request.GET.q }}" placeholder="搜尋人員姓名或使用者名稱"><button class="primary">搜尋</button>{% if request.GET.q %}<a href="{% url 'account_management' %}">清除</a>{% endif %}</form>
+  <section class="card account-card"><div class="account-row account-head"><div>人員</div><div>所屬部門</div><div>使用者名稱</div><div>登入狀態</div><div>最後登入</div><div>操作</div></div>
+    {% for account in accounts %}<div class="account-row"><div><b>{{ account.display_name|default:"未命名" }}</b><small>{{ account.get_role_display }}</small></div><div>{{ account.department.name|default:"尚未設定" }}</div><div>{% if account.has_usable_password %}<code>{{ account.username }}</code>{% else %}<span class="muted">尚未設定</span>{% endif %}</div><div>{% if account.is_active and account.has_usable_password %}<span class="badge status-completed">可登入</span>{% elif not account.is_active %}<span class="badge status-cancelled">已停用</span>{% else %}<span class="badge status-waiting">待設定</span>{% endif %}</div><div>{{ account.last_login|date:"Y/m/d H:i"|default:"—" }}</div><div><a class="edit-link" href="{% url 'account_credential_update' account.pk %}">設定帳號</a></div></div>{% empty %}<div class="empty">找不到帳號資料</div>{% endfor %}
+  </section>
+</section>
+{% endblock %}

@@ -1,0 +1,31 @@
+from django.urls import path
+from .views import DepartmentUsersView, IssueNoteAttachmentDownloadView, IssueNoteBoardView, IssueNoteToggleView, MeetingCenterView, MeetingDetailView, MeetingRecordView, MeetingExcelExportView, MeetingEndView, MeetingSeriesCreateView, MeetingSeriesUpdateView, MeetingSeriesDeleteView, MeetingStartView, ProjectBoardView, ProjectBulkTaskCreateView, ProjectCreateView, SystemSettingsView, TaskCalendarView, TaskCreateView, TaskDetailView, TaskExcelExportView, TaskHistoryView, TaskListView, TaskQuickStatusView, TaskUpdateView, UserSearchView
+
+urlpatterns = [
+    path("", TaskListView.as_view(), name="task_list"),
+    path("new/", TaskCreateView.as_view(), name="task_create"),
+    path("history/", TaskHistoryView.as_view(), name="task_history"),
+    path("calendar/", TaskCalendarView.as_view(), name="task_calendar"),
+    path("export.xlsx", TaskExcelExportView.as_view(), name="task_excel_export"),
+    path("settings/", SystemSettingsView.as_view(), name="system_settings"),
+    path("notes/", IssueNoteBoardView.as_view(), name="issue_note_board"),
+    path("notes/<int:pk>/toggle/", IssueNoteToggleView.as_view(), name="issue_note_toggle"),
+    path("meetings/", MeetingCenterView.as_view(), name="meeting_center"),
+    path("meetings/new/", MeetingSeriesCreateView.as_view(), name="meeting_series_create"),
+    path("meetings/series/<int:pk>/edit/", MeetingSeriesUpdateView.as_view(), name="meeting_series_update"),
+    path("meetings/series/<int:pk>/delete/", MeetingSeriesDeleteView.as_view(), name="meeting_series_delete"),
+    path("meetings/series/<int:pk>/start/", MeetingStartView.as_view(), name="meeting_start"),
+    path("meetings/<int:pk>/", MeetingDetailView.as_view(), name="meeting_detail"),
+    path("meetings/<int:pk>/record/", MeetingRecordView.as_view(), name="meeting_record"),
+    path("meetings/<int:pk>/export_excel/", MeetingExcelExportView.as_view(), name="meeting_export_excel"),
+    path("meetings/<int:pk>/end/", MeetingEndView.as_view(), name="meeting_end"),
+    path("note-attachments/<int:pk>/download/", IssueNoteAttachmentDownloadView.as_view(), name="issue_note_attachment_download"),
+    path("projects/", ProjectBoardView.as_view(), name="project_board"),
+    path("projects/new/", ProjectCreateView.as_view(), name="project_create"),
+    path("projects/<int:pk>/quick-tasks/", ProjectBulkTaskCreateView.as_view(), name="project_bulk_task_create"),
+    path("<int:pk>/", TaskDetailView.as_view(), name="task_detail"),
+    path("<int:pk>/edit/", TaskUpdateView.as_view(), name="task_update"),
+    path("<int:pk>/quick-status/", TaskQuickStatusView.as_view(), name="task_quick_status"),
+    path("department/<int:pk>/users/", DepartmentUsersView.as_view(), name="department_users"),
+    path("users/search/", UserSearchView.as_view(), name="user_search"),
+]

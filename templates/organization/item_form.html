@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{% if editing %}編輯{% else %}新增{% endif %}{% if item_type == 'department' %}組織單位{% else %}人員{% endif %}｜部門工作追蹤{% endblock %}
+{% block content %}
+<div class="org-modal-page">
+  <div class="org-modal-backdrop"></div>
+  <form class="org-modal" method="post" novalidate>{% csrf_token %}
+    <header><div><p class="eyebrow">ORGANIZATION EDITOR</p><h1>{% if editing %}編輯{% else %}新增{% endif %}{% if item_type == 'department' %}組織單位{% else %}人員{% endif %}</h1></div><a href="{% url 'organization_chart' %}" aria-label="關閉">×</a></header>
+    <div class="item-tabs">
+      {% if editing and item_type == 'department' %}
+        <a class="active" href="{% url 'department_update' object.pk %}">♙ 組織資料</a><a href="{% url 'organization_user_create' %}?department={{ object.pk }}">＋ 新增此單位人員</a>
+      {% elif not editing %}
+        <a class="{% if item_type == 'department' %}active{% endif %}" href="{% url 'department_create' %}">♙ 組織／部門</a><a class="{% if item_type == 'person' %}active{% endif %}" href="{% url 'organization_user_create' %}{% if selected_department_id %}?department={{ selected_department_id }}{% endif %}">♙ 具體人員</a>
+      {% endif %}
+    </div>
+    <div class="org-modal-fields">
+      {% if form.non_field_errors %}<div class="error">{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}<div class="field {% if field.name == 'is_active' %}checkbox-field{% endif %}"><label for="{{ field.id_for_label }}">{% if field.field.required %}<b>*</b>{% endif %} {{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% if field.errors %}<div class="field-error">{{ field.errors|striptags }}</div>{% endif %}</div>{% endfor %}
+    </div>
+    <footer><a href="{% url 'organization_chart' %}">取消</a><button class="primary" type="submit">儲存</button></footer>
+  </form>
+</div>
+{% endblock %}

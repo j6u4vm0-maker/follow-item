@@ -1,0 +1,37 @@
+{% load static %}
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}部門工作追蹤{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=20261001-1">
+</head>
+<body class="{% if user.is_authenticated %}app-layout{% else %}guest-layout{% endif %}">
+  {% if user.is_authenticated %}
+    <aside class="sidebar">
+      <a class="side-brand" href="{% url 'dashboard' %}"><strong>TaskFlow</strong><small>部門協作平台</small></a>
+      <nav aria-label="主要導覽">
+        <a {% if request.resolver_match.url_name == 'dashboard' %}class="active"{% endif %} href="{% url 'dashboard' %}"><span>◉</span>儀表板</a>
+        <a {% if request.resolver_match.url_name in 'task_create,task_detail,task_update' or request.resolver_match.url_name == 'task_list' and request.GET.status != 'waiting' %}class="active"{% endif %} href="{% url 'task_list' %}"><span>☷</span>工作追蹤</a>
+        <a {% if request.resolver_match.url_name == 'task_calendar' %}class="active"{% endif %} href="{% url 'task_calendar' %}"><span>▦</span>工作行事曆</a>
+        <a {% if request.resolver_match.url_name|slice:':8' == 'meeting_' %}class="active"{% endif %} href="{% url 'meeting_center' %}"><span>▥</span>會議中心</a>
+        <a {% if request.resolver_match.url_name|slice:':8' == 'project_' %}class="active"{% endif %} href="{% url 'project_board' %}"><span>▣</span>專案看板</a>
+        <a {% if request.resolver_match.url_name == 'task_list' and request.GET.status == 'waiting' %}class="active"{% endif %} href="{% url 'task_list' %}?status=waiting"><span>◷</span>等待中工作</a>
+        <a {% if request.resolver_match.url_name == 'task_history' %}class="active"{% endif %} href="{% url 'task_history' %}"><span>◴</span>歷史紀錄</a>
+        <a {% if request.resolver_match.url_name == 'issue_note_board' %}class="active"{% endif %} href="{% url 'issue_note_board' %}"><span>▤</span>問題便簽</a>
+        <a {% if request.resolver_match.url_name == 'organization_chart' %}class="active"{% endif %} href="{% url 'organization_chart' %}"><span>♙</span>組織與人員</a>
+        {% if user.is_staff or user.role == 'admin' %}<a {% if request.resolver_match.url_name == 'account_management' or request.resolver_match.url_name == 'account_credential_update' %}class="active"{% endif %} href="{% url 'account_management' %}"><span>⌁</span>帳號管理</a>{% endif %}
+        {% if user.is_staff %}<a {% if request.resolver_match.url_name == 'system_settings' %}class="active"{% endif %} href="{% url 'system_settings' %}"><span>⚙</span>系統設定</a>{% endif %}
+      </nav>
+      <div class="side-account"><div class="avatar">{{ user.display_name|default:user.username|slice:':1' }}</div><div><b>{{ user.display_name|default:user.username }}</b><small>{{ user.get_role_display }}</small></div></div>
+    </aside>
+    <div class="app-main">
+      <header class="command-bar"><span><i></i> SYSTEM ACTIVE · TASK MANAGEMENT</span><div class="command-account"><a href="{% url 'password_change' %}">修改密碼</a><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">登出</button></form></div></header>
+      <main>{% block content %}{% endblock %}</main>
+    </div>
+  {% else %}
+    <main>{% block guest_content %}{% endblock %}</main>
+  {% endif %}
+</body>
+</html>

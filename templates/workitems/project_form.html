@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}建立專案｜部門工作追蹤{% endblock %}
+{% block content %}
+<div class="task-modal-shell"><form class="task-modal" method="post" novalidate>{% csrf_token %}
+  <header class="task-modal-header"><div><p class="eyebrow">NEW PROJECT</p><h1>建立新專案</h1></div><a class="modal-close" href="{% url 'project_board' %}">×</a></header>
+  <div class="task-modal-body"><section class="compact-section"><div class="compact-heading"><span>01</span><div><h2>專案基本資料</h2><p>建立專案後，即可將多張工作單集中追蹤。</p></div></div><div class="form-grid">
+    {% include "workitems/field.html" with field=form.name span="span-2" %}{% include "workitems/field.html" with field=form.description span="span-2" %}{% include "workitems/field.html" with field=form.owner_department %}{% include "workitems/field.html" with field=form.manager %}{% include "workitems/field.html" with field=form.start_date %}{% include "workitems/field.html" with field=form.due_date %}{% include "workitems/field.html" with field=form.status span="span-2" %}
+  </div></section></div>
+  <footer class="modal-actions"><a href="{% url 'project_board' %}">取消</a><button class="primary" type="submit">建立專案</button></footer>
+</form></div>
+<script>const dept=document.querySelector('#id_owner_department'),manager=document.querySelector('#id_manager');dept?.addEventListener('change',async()=>{if(!dept.value){manager.innerHTML='<option value="">---------</option>';return;}const response=await fetch(`/tasks/department/${dept.value}/users/`);const data=await response.json();manager.innerHTML='<option value="">---------</option>'+data.users.map(user=>`<option value="${user.id}">${user.display_name||user.username}</option>`).join('');});</script>
+{% endblock %}

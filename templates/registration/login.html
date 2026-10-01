@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}登入｜部門工作追蹤{% endblock %}
+{% block guest_content %}
+<section class="login-shell">
+  <div class="login-panel">
+    <p class="eyebrow">INTERNAL WORKSPACE</p>
+    <h1>讓每一件工作，都有清楚的下一步。</h1>
+    <p>集中掌握需求、負責人與進度，讓部門協作不再散落於試算表與訊息中。</p>
+    <div class="flow"><span>需求</span><i></i><span>指派</span><i></i><span>執行</span><i></i><span>完成</span></div>
+  </div>
+  <div class="login-card">
+    <h2>登入系統</h2>
+    <p>使用公司提供的帳號登入</p>
+    {% if form.non_field_errors %}<div class="error" role="alert">{{ form.non_field_errors|striptags }}</div>{% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <label for="id_username">帳號</label>
+      <input id="id_username" name="username" autocomplete="username" autofocus required>
+      <label for="id_password">密碼</label>
+      <input id="id_password" name="password" type="password" autocomplete="current-password" required>
+      <button class="primary" type="submit">登入</button>
+    </form>
+    <small>若帳號遭停用或忘記密碼，請聯絡系統管理員。</small>
+  </div>
+</section>
+{% endblock %}

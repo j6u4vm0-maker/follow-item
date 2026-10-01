@@ -1,0 +1,29 @@
+<script>
+const csrfToken=document.querySelector('[name=csrfmiddlewaretoken]')?.value||'{{ csrf_token }}';
+let completionTimer=null,pendingButton=null,secondsLeft=5;
+function updateProjectSummary(project){if(!project)return;const value=document.querySelector('#project-progress-value'),bar=document.querySelector('#project-progress-bar'),counts=document.querySelector('#project-progress-counts');if(value)value.textContent=`${project.progress}%`;if(bar)bar.style.width=`${project.progress}%`;if(counts)counts.textContent=`共 ${project.task_count} 件工作，已完成 ${project.completed_count} 件`;}
+function cancelCountdown(){if(completionTimer)clearInterval(completionTimer);completionTimer=null;pendingButton=null;const toast=document.querySelector('#completion-countdown');if(toast)toast.hidden=true;}
+async function setStatus(button,targetStatus,waitingReason=''){
+  button.disabled=true;
+  const body=new URLSearchParams({target_status:targetStatus});
+  if(waitingReason)body.set('waiting_reason',waitingReason);
+  const response=await fetch(button.dataset.url,{method:'POST',headers:{'X-CSRFToken':csrfToken,'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded'},body});
+  const data=await response.json();
+  if(!response.ok){button.disabled=false;alert(data.error||'狀態更新失敗');return;}
+  updateProjectSummary(data.project);
+  const taskId=button.dataset.taskId;
+  if(data.moved_to_history){document.querySelector(`#task-row-${taskId}`)?.remove();document.querySelector(`#project-task-row-${taskId}`)?.remove();const counter=document.querySelector('#project-active-count');if(counter)counter.textContent=`${document.querySelectorAll('#project-task-list tbody tr').length} 筆進行中`;return;}
+  button.dataset.status=data.status;button.dataset.waitingReason=data.waiting_reason||'';button.className=`badge status-${data.status} quick-status`;button.querySelector('span').textContent=data.label;button.disabled=false;
+  const row=document.querySelector(`#task-row-${taskId}`)||document.querySelector(`#project-task-row-${taskId}`);const progress=row?.querySelector('.progress-text');if(progress)progress.textContent=`${data.progress}%`;
+}
+function startCompletion(button){cancelCountdown();pendingButton=button;secondsLeft=5;const toast=document.querySelector('#completion-countdown');document.querySelector('#completion-message').textContent=`「${button.dataset.task}」將移至歷史紀錄；再點狀態可回到進行中`;document.querySelector('#completion-seconds').textContent=secondsLeft;toast.hidden=false;completionTimer=setInterval(()=>{secondsLeft-=1;document.querySelector('#completion-seconds').textContent=secondsLeft;if(secondsLeft<=0){clearInterval(completionTimer);completionTimer=null;const target=pendingButton;pendingButton=null;toast.hidden=true;if(target)setStatus(target,'completed');}},1000);}
+document.querySelectorAll('.quick-status').forEach(button=>button.addEventListener('click',()=>{
+  if(completionTimer&&pendingButton===button){cancelCountdown();setStatus(button,'in_progress');return;}
+  if(completionTimer)cancelCountdown();
+  const current=button.dataset.status;
+  if(current==='not_started'){setStatus(button,'in_progress');return;}
+  if(current==='in_progress'){setStatus(button,'waiting');return;}
+  if(current==='waiting'){startCompletion(button);return;}
+}));
+document.querySelector('#cancel-completion')?.addEventListener('click',cancelCountdown);
+</script>

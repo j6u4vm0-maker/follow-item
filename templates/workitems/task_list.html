@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}工作清單｜部門工作追蹤{% endblock %}
+{% block content %}
+<section class="workspace">
+  <div class="page-head console-head">
+    <div><p class="eyebrow">TASK COMMAND CENTER</p><h1>任務指揮中心</h1><p>集中追蹤所有授權範圍內的工作、責任歸屬與執行狀態。</p></div>
+    {% if can_create %}<a class="button-link" href="{% url 'task_create' %}">＋ 指派新工作</a>{% endif %}
+  </div>
+  <form class="filter-card" method="get" id="task-filter-form">
+    <input type="hidden" name="sort" id="sort-input" value="{{ current_sort }}">
+    <input type="hidden" name="order" id="order-input" value="{{ current_order }}">
+    <input name="q" value="{{ query.q }}" placeholder="搜尋編號、名稱、說明或人員姓名">
+    <select name="status"><option value="">全部狀態</option>{% for value,label in statuses %}<option value="{{ value }}" {% if query.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <select name="priority"><option value="">全部優先度</option>{% for value,label in priorities %}<option value="{{ value }}" {% if query.priority == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <select name="category"><option value="">全部類別</option>{% for item in categories %}<option value="{{ item.id }}" {% if query.category == item.id|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select>
+    <button class="primary" type="submit">套用</button><a href="{% url 'task_list' %}?organization_filter_submitted=1">清除</a>
+    {% if section_departments %}<div class="section-filter"><div class="section-filter-head"><div><b>組織案件檢視</b><span>展開選擇想查看的部、課或組；上級單位包含所有下級案件</span></div><div><button id="clear-sections" type="button">清除選擇</button></div></div><details class="organization-picker"><summary><span>選擇部／課／組</span><b>{% if selected_section_count %}已選 {{ selected_section_count }} 個單位{% else %}尚未選擇{% endif %}</b></summary><div class="organization-picker-panel"><div class="organization-picker-actions"><span>可複選不同層級的單位</span><button id="select-all-sections" type="button">全部選取</button></div><div class="organization-tree-options">{% for section in section_departments %}<label class="unit-{{ section.unit_type }} depth-{{ section.depth }} {% if section.selected %}selected{% endif %}"><input type="checkbox" name="departments" value="{{ section.pk }}" {% if section.selected %}checked{% endif %}><i></i><small>{{ section.get_unit_type_display }}</small><span>{{ section.name }}</span><em>{{ section.open_count }} 件</em></label>{% endfor %}</div><button class="primary organization-apply" type="submit" name="organization_filter_submitted" value="1">套用組織篩選</button></div></details></div>{% endif %}
+  </form>
+  {% if selected_unit_summaries %}<section class="organization-status-grid command-cards">{% for summary in selected_unit_summaries %}<a class="organization-status-card color-{{ summary.color_index }} {% if summary.is_focused %}active{% endif %}" href="{{ summary.focus_url }}" title="{% if summary.is_focused %}取消 {{ summary.unit.name }} 的工作篩選{% else %}加入 {{ summary.unit.name }} 的工作篩選{% endif %}"><header><div class="command-card-title"><i>♙</i><div><b>{{ summary.unit.name }}</b><small>點擊切換，可同時選擇多張卡片</small></div></div>{% if summary.high_priority %}<span class="high-alert">△ {{ summary.high_priority }} 件高優先待辦</span>{% endif %}</header><div class="command-card-metrics"><div><span>待辦任務</span><strong>{{ summary.open_total }}</strong></div><div><span>已完成</span><strong>{{ summary.completed }} / {{ summary.total }}</strong></div><div class="overdue-mini {% if summary.overdue %}has-overdue{% endif %}"><span>已延遲</span><strong>{{ summary.overdue }}</strong></div></div><div class="command-card-progress"><div><span>整體進度</span><b>{{ summary.completion_rate }}%</b></div><div><i style="width:{{ summary.completion_rate }}%"></i></div></div><footer>{% if summary.is_focused %}已選取，再點一次取消{% else %}加入工作篩選{% endif %} <b>→</b></footer></a>{% endfor %}</section>{% endif %}
+  <section class="card table-card"><div class="table-title"><div><b>工作追蹤清單</b><span>{% if focus_department_ids %}顯示已選卡片 · {% endif %}依預計完成日排序</span></div><div class="task-export-actions"><span>共 {{ page_obj.paginator.count|default:tasks|length }} 筆</span><b id="selected-task-count">已選 0 筆</b><button id="clear-task-selection" type="button">清除選取</button><button id="open-export-dialog" class="primary" type="button">匯出 Excel</button></div></div>
+    {% if tasks %}
+    <div class="table-wrap"><table class="task-table"><thead><tr><th class="task-select-column"><input id="select-page-tasks" type="checkbox" title="全選本頁"></th><th><a href="#" class="sort-link" data-sort="task_no">工作名稱／編號<span class="sort-dir"></span></a></th><th><a href="#" class="sort-link" data-sort="status">狀態<span class="sort-dir"></span></a></th><th><a href="#" class="sort-link" data-sort="request_department">需求單位<span class="sort-dir"></span></a></th><th><a href="#" class="sort-link" data-sort="owner_department">執行單位／人員<span class="sort-dir"></span></a></th><th><a href="#" class="sort-link" data-sort="priority">優先度<span class="sort-dir"></span></a></th><th><a href="#" class="sort-link" data-sort="progress">進度<span class="sort-dir"></span></a></th><th><a href="#" class="sort-link" data-sort="due_date">預計完成<span class="sort-dir"></span></a></th></tr></thead><tbody>
+      {% for task in tasks %}<tr id="task-row-{{ task.pk }}" class="{% if task.is_overdue %}overdue{% endif %}"><td class="task-select-column"><input class="task-export-check" type="checkbox" value="{{ task.pk }}" aria-label="選取 {{ task.title }}"></td><td class="task-name"><a href="{% url 'task_detail' task.pk %}"><b>{{ task.title }}</b><small>{{ task.task_no }}{% if task.category %} · {{ task.category.name }}{% endif %}</small></a></td><td>{% if task.user_can_edit and task.status != 'completed' and task.status != 'cancelled' %}{% include "workitems/_quick_status_control.html" with task=task %}{% else %}<span class="badge status-{{ task.status }}"><i></i>{{ task.get_status_display }}</span>{% endif %}</td><td>{{ task.request_department.name }}</td><td><b>{{ task.owner_department.name }}</b><small>{{ task.primary_assignee }}</small></td><td><span class="badge priority-{{ task.priority }}">{{ task.get_priority_display }}</span></td><td><span class="progress-text">{{ task.progress }}%</span></td><td>{{ task.due_date|date:"Y/m/d" }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty"><b>找不到符合條件的工作</b><p>調整篩選條件，或建立第一筆工作。</p></div>{% endif %}
+    {% if is_paginated %}<nav class="pagination">{% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">上一頁</a>{% endif %}<span>第 {{ page_obj.number }}／{{ page_obj.paginator.num_pages }} 頁</span>{% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">下一頁</a>{% endif %}</nav>{% endif %}
+  </section>
+</section>
+<dialog id="task-export-dialog" class="task-export-dialog"><form method="post" action="{% url 'task_excel_export' %}">{% csrf_token %}<input id="export-selected-ids" type="hidden" name="selected_ids"><input type="hidden" name="filter_query" value="{{ request.GET.urlencode }}"><header><div><b>匯出 Excel</b><span>選擇資料範圍與輸出格式</span></div><button id="close-export-dialog" type="button" aria-label="關閉">×</button></header><section><h3>匯出範圍</h3><label><input type="radio" name="export_mode" value="selected" checked><span><b>勾選項目</b><small>匯出跨頁保留的選取項目</small></span></label><label><input type="radio" name="export_mode" value="filtered"><span><b>目前篩選結果</b><small>匯出符合目前組織、狀態及搜尋條件的全部資料</small></span></label><label><input type="radio" name="export_mode" value="all"><span><b>全部授權資料</b><small>匯出你有權限查看的全部工作</small></span></label></section><section><h3>工作表設定</h3><label class="export-option"><input type="checkbox" name="include_history"><span><b>包含歷史工作</b><small>加入已完成與已取消的工作</small></span></label><label class="export-option"><input type="checkbox" name="split_by_status" checked><span><b>依狀態分工作表</b><small>未開始、進行中、等待及歷史資料分頁呈現</small></span></label></section><section><div class="export-fields-head"><h3>輸出欄位</h3><button id="toggle-export-fields" type="button">取消全選</button></div><div class="export-fields">{% for field,definition in export_fields.items %}<label><input type="checkbox" name="fields" value="{{ field }}" checked><span>{{ definition.0 }}</span></label>{% endfor %}</div></section><footer><button id="cancel-export-dialog" type="button">取消</button><button class="primary" type="submit">下載 Excel</button></footer></form></dialog>
+<div id="completion-countdown" class="completion-countdown" hidden><div><b>即將完成工作</b><span id="completion-message"></span></div><strong id="completion-seconds">5</strong><button type="button" id="cancel-completion">取消</button></div>
+{% include "workitems/_quick_status_script.html" %}
+<script>
+const sectionChecks=[...document.querySelectorAll('.organization-tree-options input[type=checkbox]')];
+sectionChecks.forEach(check=>check.addEventListener('change',()=>check.closest('label').classList.toggle('selected',check.checked)));
+document.querySelector('#select-all-sections')?.addEventListener('click',()=>sectionChecks.forEach(check=>{check.checked=true;check.closest('label').classList.add('selected');}));
+document.querySelector('#clear-sections')?.addEventListener('click',()=>sectionChecks.forEach(check=>{check.checked=false;check.closest('label').classList.remove('selected');}));
+const selectionKey='taskflow-task-selection-{{ user.pk }}',taskChecks=[...document.querySelectorAll('.task-export-check')],pageSelect=document.querySelector('#select-page-tasks'),selectionCount=document.querySelector('#selected-task-count');
+let selectedTaskIds=new Set(JSON.parse(localStorage.getItem(selectionKey)||'[]').map(String));
+function saveTaskSelection(){localStorage.setItem(selectionKey,JSON.stringify([...selectedTaskIds]));selectionCount.textContent=`已選 ${selectedTaskIds.size} 筆`;taskChecks.forEach(check=>check.checked=selectedTaskIds.has(check.value));if(pageSelect){pageSelect.checked=taskChecks.length>0&&taskChecks.every(check=>check.checked);pageSelect.indeterminate=taskChecks.some(check=>check.checked)&&!pageSelect.checked;}}
+taskChecks.forEach(check=>check.addEventListener('change',()=>{check.checked?selectedTaskIds.add(check.value):selectedTaskIds.delete(check.value);saveTaskSelection();}));
+pageSelect?.addEventListener('change',()=>{taskChecks.forEach(check=>pageSelect.checked?selectedTaskIds.add(check.value):selectedTaskIds.delete(check.value));saveTaskSelection();});
+document.querySelector('#clear-task-selection')?.addEventListener('click',()=>{selectedTaskIds.clear();saveTaskSelection();});saveTaskSelection();
+const exportDialog=document.querySelector('#task-export-dialog');document.querySelector('#open-export-dialog')?.addEventListener('click',()=>{document.querySelector('#export-selected-ids').value=[...selectedTaskIds].join(',');exportDialog.showModal();});
+document.querySelector('#close-export-dialog')?.addEventListener('click',()=>exportDialog.close());document.querySelector('#cancel-export-dialog')?.addEventListener('click',()=>exportDialog.close());
+exportDialog?.addEventListener('click',event=>{if(event.target===exportDialog)exportDialog.close();});
+exportDialog?.querySelector('form').addEventListener('submit',event=>{document.querySelector('#export-selected-ids').value=[...selectedTaskIds].join(',');const mode=exportDialog.querySelector('[name=export_mode]:checked').value;if(mode==='selected'&&!selectedTaskIds.size){event.preventDefault();alert('請先勾選至少一筆工作，或改選目前篩選結果。');}});
+document.querySelector('#toggle-export-fields')?.addEventListener('click',event=>{const boxes=[...document.querySelectorAll('.export-fields input')],shouldCheck=boxes.some(box=>!box.checked);boxes.forEach(box=>box.checked=shouldCheck);event.currentTarget.textContent=shouldCheck?'取消全選':'全部選取';});
+
+const sortForm=document.querySelector('#task-filter-form'),sortInput=document.querySelector('#sort-input'),orderInput=document.querySelector('#order-input');
+document.querySelectorAll('.sort-link').forEach(link=>{
+  if(link.dataset.sort===sortInput.value){
+    link.classList.add('active');
+    link.querySelector('.sort-dir').textContent=orderInput.value==='desc'?' ↓':' ↑';
+  }
+  link.addEventListener('click',e=>{
+    e.preventDefault();
+    if(sortInput.value===link.dataset.sort){
+      orderInput.value=orderInput.value==='asc'?'desc':'asc';
+    }else{
+      sortInput.value=link.dataset.sort;
+      orderInput.value='asc';
+    }
+    sortForm.submit();
+  });
+});
+</script>
+<style>
+.task-table th a.sort-link { color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+.task-table th a.sort-link:hover { text-decoration: underline; }
+.task-table th a.sort-link .sort-dir { font-size: 0.9em; opacity: 0.7; }
+</style>
+{% endblock %}
